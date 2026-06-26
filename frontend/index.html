@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Office Revenue Predictor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* Light theme variables */
+            --bg-app: radial-gradient(circle at top right, #f6f8fb, #edf1f6);
+            --panel-bg: rgba(255, 255, 255, 0.7);
+            --panel-border: rgba(0, 0, 0, 0.08);
+            --card-bg: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.06);
+
+            --text-title: #1e2229;
+            --text-body: #4e5564;
+            --text-desc: #7e879a;
+            --text-muted: #9ba3b2;
+
+            --accent-primary: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-glow: rgba(79, 70, 229, 0.15);
+            --accent-bg: #f5f3ff;
+
+            --text-success: #10b981;
+            --text-danger: #ef4444;
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08);
+
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        @media(prefers-color-scheme: dark) {
+            :root {
+                /* Dark theme variables */
+                --bg-app: radial-gradient(circle at top right, #12131a, #0a0b0e);
+                --panel-bg: rgba(20, 21, 28, 0.6);
+                --panel-border: rgba(255, 255, 255, 0.06);
+                --card-bg: rgba(28, 30, 41, 0.7);
+                --card-border: rgba(255, 255, 255, 0.04);
+
+                --text-title: #f3f4f6;
+                --text-body: #cbd5e1;
+                --text-desc: #94a3b8;
+                --text-muted: #64748b;
+
+                --accent-primary: #6366f1;
+                --accent-hover: #4f46e5;
+                --accent-glow: rgba(99, 102, 241, 0.25);
+                --accent-bg: rgba(99, 102, 241, 0.12);
+
+                --text-success: #34d399;
+                --text-danger: #f87171;
+
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+                --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+                --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-app);
+            color: var(--text-body);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* Hero / Header Section */
+        .hero {
+            padding: 2rem;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .hero-icon {
+            font-size: 2.2rem;
+            background: var(--accent-bg);
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .hero-text h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+        }
+
+        .hero-text p {
+            font-size: 0.95rem;
+            color: var(--text-desc);
+            margin-top: 0.15rem;
+        }
+
+        /* Main Workspace Split Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            min-height: 600px;
+        }
+
+        @media (max-width: 960px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                border-right: none !important;
+                border-bottom: 1px solid var(--panel-border);
+            }
+        }
+
+        /* Left Column: Form Controls */
+        .sidebar {
+            padding: 2rem;
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Preset Selectors */
+        .presets-section h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .presets {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 0.5rem 0.85rem;
+            border: 1px solid var(--panel-border);
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            color: var(--text-body);
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: var(--accent-bg);
+        }
+
+        /* Input Cards */
+        .input-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-title);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-card h3 svg {
+            color: var(--accent-primary);
+        }
+
+        .grid-fields {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        .grid-fields-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 480px) {
+            .grid-fields-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Field styling */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .field-hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-hdr label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-body);
+        }
+
+        .field-val-display {
+            font-size: 0.85rem;
+            font-family: var(--font-mono);
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+
+        /* Synced Slider Group */
+        .input-slider-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .custom-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--panel-border);
+            outline: none;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease;
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .custom-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background: var(--accent-hover);
+        }
+
+        .field-num-input {
+            width: 80px;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-family: var(--font-mono);
+            background: var(--card-bg);
+            color: var(--text-body);
+            text-align: right;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .field-num-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        /* Standard text/select input */
+        .text-input, .select-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            background: var(--card-bg);
+            color: var(--text-body);
+            font-family: var(--font-sans);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .text-input:focus, .select-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Genre Tags Selection */
+        .genres-card h3 span {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 0.25rem;
+        }
+
+        .genre-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 0.5rem;
+        }
+
+        .genre-pill {
+            padding: 0.4rem 0.9rem;
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: var(--panel-bg);
+            color: var(--text-body);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .genre-pill:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .genre-pill.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: #ffffff;
+            box-shadow: 0 4px 10px var(--accent-glow);
+        }
+
+        /* Predict CTA button */
+        .predict-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent-primary);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .predict-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        .predict-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Right Column: Dynamic Results Area */
+        .results-panel {
+            background: rgba(0, 0, 0, 0.02);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @media(prefers-color-scheme: dark) {
+            .results-panel {
+                background: rgba(255, 255, 255, 0.01);
+            }
+        }
+
+        /* Empty/Default state */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .empty-state-icon {
+            font-size: 3.5rem;
+            opacity: 0.4;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .empty-state h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-title);
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            color: var(--text-desc);
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        /* Loading / Analyzing State */
+        .loading-state {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .loading-state p {
+            font-size: 0.95rem;
+            color: var(--text-desc);
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--panel-border);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Active Results Panel Dashboard */
+        .dashboard-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results-header {
+            text-align: center;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .results-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--text-success));
+        }
+
+        .results-header .m-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            color: var(--text-desc);
+            margin-bottom: 0.25rem;
+        }
+
+        .results-header .m-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-title);
+            margin-bottom: 0.75rem;
+        }
+
+        .results-header .revenue-val {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--accent-primary);
+            letter-spacing: -0.03em;
+            margin: 0.5rem 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .results-header .badge-container {
+            margin-top: 0.5rem;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 650;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .badge-blockbuster {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .badge-hit {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .badge-moderate {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-risky {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .results-header .status-msg {
+            font-size: 0.9rem;
+            color: var(--text-body);
+            margin-top: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* SVG Circular ROI Gauge & Net Profit Flex */
+        .analytics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 480px) {
+            .analytics-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .analytics-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .roi-gauge-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 0.5rem;
+        }
+
+        .roi-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .roi-svg circle {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .roi-svg circle.bg {
+            stroke: var(--panel-border);
+        }
+
+        .roi-svg circle.meter {
+            stroke: var(--accent-primary);
+            stroke-dasharray: 251.2;
+            stroke-dashoffset: 251.2;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+            stroke-linecap: round;
+        }
+
+        .roi-gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .roi-gauge-text .val {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-title);
+        }
+
+        .analytics-card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .net-profit-display {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .net-profit-trend {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Large single span indicators */
+        .indicator-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .indicator-card h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .indicator-val-mono {
+            font-size: 1.15rem;
+            font-family: var(--font-mono);
+            color: var(--text-title);
+            font-weight: 500;
+        }
+
+        /* Influencing Factors section */
+        .factors-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .factors-card h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .factor-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .factor-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .factor-label {
+            font-size: 0.85rem;
+            color: var(--text-body);
+            font-weight: 500;
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .factor-track {
+            flex: 1;
+            height: 8px;
+            background: var(--panel-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .factor-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), #a855f7);
+            width: 0;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .factor-val {
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            font-weight: 500;
+            color: var(--accent-primary);
+            width: 32px;
+            text-align: right;
+        }
+
+        /* Recommendations */
+        .recs-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .recs-card h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .recs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .rec-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-body);
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .rec-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .rec-arrow {
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+            line-height: 1;
+            margin-top: -1px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Utility styles */
+        .positive {
+            color: var(--text-success);
+        }
+
+        .negative {
+            color: var(--text-danger);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="hero">
+            <div class="hero-icon">🎬</div>
+            <div class="hero-text">
+                <h1>Box Office Revenue Predictor</h1>
+                <p>Interactive machine learning-driven revenue modeling</p>
+            </div>
+        </header>
+
+        <!-- Workspace Split Layout -->
+        <main class="workspace">
+            <!-- Sidebar: Parameters Form -->
+            <section class="sidebar">
+                <!-- Preset Templates -->
+                <div class="presets-section">
+                    <h3>Templates</h3>
+                    <div class="presets">
+                        <button class="preset-btn" onclick="applyPreset('blockbuster')">⚡ Blockbuster</button>
+                        <button class="preset-btn" onclick="applyPreset('indie')">🌿 Indie Drama</button>
+                        <button class="preset-btn" onclick="applyPreset('animation')">📺 Animation Studio</button>
+                    </div>
+                </div>
+
+                <!-- Input Card 1: Core Details -->
+                <div class="input-card">
+                    <h3>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
+                        </svg>
+                        Core Film Details
+                    </h3>
+                    <div class="grid-fields">
+                        <div class="field">
+                            <label for="movieTitle">Movie Title</label>
+                            <input type="text" id="movieTitle" class="text-input" placeholder="Enter movie title..." value="Galactic Odyssey">
+                        </div>
+
+                        <div class="field">
+                            <div class="field-hdr">
+                                <label for="budget">Production Budget</label>
+                                <span class="field-val-display">$<span id="budgetVal">150</span>M</span>
+                            </div>
+                            <div class="input-slider-group">
+                                <input type="range" id="budgetSlider" class="custom-slider" min="1" max="500" step="1" value="150">
+                                <input type="number" id="budget" class="field-num-input" min="1" max="500" value="150">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-hdr">
+                                <label for="popularity">Estimated Popularity</label>
+                                <span class="field-val-display"><span id="popularityVal">250</span></span>
+                            </div>
+                            <div class="input-slider-group">
+                                <input type="range" id="popularitySlider" class="custom-slider" min="1" max="1000" step="5" value="250">
+                                <input type="number" id="popularity" class="field-num-input" min="1" max="1000" value="250">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-hdr">
+                                <label for="runtime">Runtime (Minutes)</label>
+                                <span class="field-val-display"><span id="runtimeVal">135</span> min</span>
+                            </div>
+                            <div class="input-slider-group">
+                                <input type="range" id="runtimeSlider" class="custom-slider" min="60" max="240" step="1" value="135">
+                                <input type="number" id="runtime" class="field-num-input" min="60" max="240" value="135">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Card 2: Release & Scale -->
+                <div class="input-card">
+                    <h3>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"></path>
+                        </svg>
+                        Release & Production
+                    </h3>
+                    <div class="grid-fields">
+                        <div class="grid-fields-2col">
+                            <div class="field">
+                                <label for="releaseDate">Release Date</label>
+                                <input type="date" id="releaseDate" class="text-input">
+                            </div>
+                            <div class="field">
+                                <label for="language">Language</label>
+                                <select id="language" class="select-input">
+                                    <option value="en">English</option>
+                                    <option value="fr">French</option>
+                                    <option value="es">Spanish</option>
+                                    <option value="de">German</option>
+                                    <option value="ja">Japanese</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid-fields-2col">
+                            <div class="field">
+                                <label for="castCount">Cast Size</label>
+                                <input type="number" id="castCount" class="text-input" value="45" min="1" max="200">
+                            </div>
+                            <div class="field">
+                                <label for="crewCount">Crew Size</label>
+                                <input type="number" id="crewCount" class="text-input" value="120" min="1" max="500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Genre pills selection -->
+                <div class="genres-card">
+                    <h3>Genres <span>(select all that apply)</span></h3>
+                    <div class="genre-pills" id="genrePills"></div>
+                </div>
+
+                <!-- Call to action button -->
+                <button class="predict-btn" onclick="predictRevenue()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"></path>
+                    </svg>
+                    Predict Revenue
+                </button>
+            </section>
+
+            <!-- Right Column: Interactive Dashboard Results -->
+            <section class="results-panel" id="resultsPanel">
+                <!-- Default empty state -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">📊</div>
+                    <h2>Ready for Analysis</h2>
+                    <p>Configure the movie parameters on the left and click **Predict Revenue** to generate prediction analytics.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state hidden" id="loadingArea">
+                    <div class="spinner"></div>
+                    <p>Executing machine learning regression models...</p>
+                </div>
+
+                <!-- Analytics Dashboard -->
+                <div class="dashboard-analysis hidden" id="resultsArea">
+                    <!-- Revenue & Category Badge -->
+                    <div class="results-header">
+                        <div class="m-title">Predicted Worldwide Gross</div>
+                        <div class="m-name" id="displayTitle">Galactic Odyssey</div>
+                        <div class="revenue-val" id="revenueNum">$0.00</div>
+                        <div class="badge-container">
+                            <span class="category-badge" id="categoryBadge">HIT</span>
+                        </div>
+                        <div class="status-msg" id="statusMessage">Prediction complete.</div>
+                    </div>
+
+                    <!-- Metrics row (ROI & Profit) -->
+                    <div class="analytics-row">
+                        <!-- ROI Circular Gauge -->
+                        <div class="analytics-card">
+                            <div class="roi-gauge-container">
+                                <svg class="roi-svg" viewBox="0 0 100 100">
+                                    <circle class="bg" cx="50" cy="50" r="40" />
+                                    <circle class="meter" id="roiCircle" cx="50" cy="50" r="40" />
+                                </svg>
+                                <div class="roi-gauge-text">
+                                    <div class="val" id="roiVal">0.00x</div>
+                                </div>
+                            </div>
+                            <div class="analytics-card-title">Estimated ROI</div>
+                        </div>
+
+                        <!-- Net Profit metric card -->
+                        <div class="analytics-card">
+                            <div class="net-profit-display" id="profitVal">$0</div>
+                            <div class="net-profit-trend" id="profitTrend">
+                                <span id="trendArrow">↑</span> <span id="trendLabel">Profitable</span>
+                            </div>
+                            <div class="analytics-card-title">Net Profit Margin</div>
+                        </div>
+                    </div>
+
+                    <!-- Confidence range single span -->
+                    <div class="indicator-card">
+                        <h4>95% Confidence Interval</h4>
+                        <div class="indicator-val-mono" id="confidenceVal">$0.00 - $0.00</div>
+                    </div>
+
+                    <!-- Influencing Factors -->
+                    <div class="factors-card">
+                        <h4>Top Prediction Influencing Factors</h4>
+                        <div class="factor-row">
+                            <span class="factor-label">Budget</span>
+                            <div class="factor-track">
+                                <div class="factor-fill" id="fBudget"></div>
+                            </div>
+                            <span class="factor-val" id="fBudgetPct">0%</span>
+                        </div>
+                        <div class="factor-row">
+                            <span class="factor-label">Popularity</span>
+                            <div class="factor-track">
+                                <div class="factor-fill" id="fPop"></div>
+                            </div>
+                            <span class="factor-val" id="fPopPct">0%</span>
+                        </div>
+                        <div class="factor-row">
+                            <span class="factor-label">Genre Mix</span>
+                            <div class="factor-track">
+                                <div class="factor-fill" id="fGenre"></div>
+                            </div>
+                            <span class="factor-val" id="fGenrePct">0%</span>
+                        </div>
+                        <div class="factor-row">
+                            <span class="factor-label">Cast & Crew</span>
+                            <div class="factor-track">
+                                <div class="factor-fill" id="fCast"></div>
+                            </div>
+                            <span class="factor-val" id="fCastPct">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Strategic Recommendations -->
+                    <div class="recs-card">
+                        <h4>Strategic Action Recommendations</h4>
+                        <div class="recs-list" id="recsArea"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const genres = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Science Fiction", "Thriller", "War", "Western"];
+        const selected = new Set(["Action", "Adventure", "Science Fiction"]);
+
+        // Sync helper
+        function syncSliderNum(sliderId, numId, displayId) {
+            const slider = document.getElementById(sliderId);
+            const num = document.getElementById(numId);
+            const disp = document.getElementById(displayId);
+
+            slider.addEventListener('input', () => {
+                num.value = slider.value;
+                disp.textContent = slider.value;
+            });
+            num.addEventListener('input', () => {
+                // Ensure value stays within bounds
+                let val = parseFloat(num.value);
+                const min = parseFloat(num.min);
+                const max = parseFloat(num.max);
+                if (isNaN(val)) val = min;
+                if (val < min) val = min;
+                if (val > max) val = max;
+                num.value = val;
+                
+                slider.value = val;
+                disp.textContent = val;
+            });
+        }
+
+        function renderPills() {
+            const c = document.getElementById('genrePills');
+            c.innerHTML = '';
+            genres.forEach(g => {
+                const el = document.createElement('div');
+                el.className = 'genre-pill' + (selected.has(g) ? ' active' : '');
+                el.textContent = g;
+                el.onclick = () => {
+                    selected.has(g) ? selected.delete(g) : selected.add(g);
+                    renderPills();
+                };
+                c.appendChild(el);
+            });
+        }
+
+        const presets = {
+            blockbuster: { title: 'Galactic Odyssey', budget: 200, popularity: 400, runtime: 148, cast: 60, crew: 200, genres: ['Action', 'Adventure', 'Science Fiction'] },
+            indie: { title: 'The Quiet Hours', budget: 8, popularity: 45, runtime: 98, cast: 12, crew: 25, genres: ['Drama', 'Romance'] },
+            animation: { title: 'Sunflower Valley', budget: 120, popularity: 280, runtime: 102, cast: 20, crew: 180, genres: ['Animation', 'Family', 'Comedy'] }
+        };
+
+        function applyPreset(k) {
+            const p = presets[k];
+            document.getElementById('movieTitle').value = p.title;
+            
+            document.getElementById('budget').value = p.budget;
+            document.getElementById('budgetSlider').value = p.budget;
+            document.getElementById('budgetVal').textContent = p.budget;
+            
+            document.getElementById('popularity').value = p.popularity;
+            document.getElementById('popularitySlider').value = p.popularity;
+            document.getElementById('popularityVal').textContent = p.popularity;
+            
+            document.getElementById('runtime').value = p.runtime;
+            document.getElementById('runtimeSlider').value = p.runtime;
+            document.getElementById('runtimeVal').textContent = p.runtime;
+            
+            document.getElementById('castCount').value = p.cast;
+            document.getElementById('crewCount').value = p.crew;
+            
+            selected.clear();
+            p.genres.forEach(g => selected.add(g));
+            renderPills();
+        }
+
+        function fmt(n) {
+            if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+            if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+            return '$' + n.toFixed(0);
+        }
+
+        const recMap = {
+            BLOCKBUSTER: ["Maximize the marketing window — start campaign 8 weeks out", "Lock international distribution deals early", "Plan franchise sequels during production", "Negotiate favorable opening-weekend theater slots"],
+            HIT: ["Target wide audience with platform-specific creatives", "Optimize for opening weekend — first 3 days set the trajectory", "Consider limited early release to build buzz"],
+            MODERATE: ["Focus marketing on core genre fans first", "Plan a strong streaming follow-up within 90 days", "Word-of-mouth matters — invest in early screenings"],
+            RISKY: ["Trim production budget where possible without cutting talent", "Target film festival circuit for early momentum", "Explore co-production partnerships to spread risk"]
+        };
+
+        async function predictRevenue() {
+            if (!selected.size) {
+                alert('Select at least one genre');
+                return;
+            }
+            const date = document.getElementById('releaseDate').value;
+            if (!date) {
+                alert('Set a release date');
+                return;
+            }
+
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('loadingArea').classList.remove('hidden');
+            document.getElementById('resultsArea').classList.add('hidden');
+
+            const [y, m, d] = date.split('-');
+            const movieData = {
+                budget: parseFloat(document.getElementById('budget').value) * 1e6,
+                popularity: parseFloat(document.getElementById('popularity').value),
+                runtime: parseFloat(document.getElementById('runtime').value),
+                release_year: +y,
+                release_month: +m,
+                release_day: +d,
+                original_language: document.getElementById('language').value,
+                genre_count: selected.size,
+                companies_count: 5,
+                countries_count: 2,
+                languages_count: 2,
+                cast_count: +document.getElementById('castCount').value,
+                crew_count: +document.getElementById('crewCount').value,
+                genres: [...selected]
+            };
+
+            try {
+                const r = await fetch(`${window.location.origin}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ movie: movieData })
+                });
+
+                if (!r.ok) throw new Error((await r.json()).detail || 'Prediction failed');
+                const res = await r.json();
+
+                // 1. Movie name and basic gross
+                const title = document.getElementById('movieTitle').value || 'Untitled Project';
+                document.getElementById('displayTitle').textContent = title;
+                document.getElementById('revenueNum').textContent = fmt(res.predicted_revenue);
+                document.getElementById('statusMessage').textContent = res.message;
+
+                // 2. Category badge class mapping
+                const badge = document.getElementById('categoryBadge');
+                badge.textContent = res.category;
+                badge.className = 'category-badge badge-' + res.category.toLowerCase();
+
+                // 3. ROI Circular Gauge animation
+                // Circumference = 2 * PI * r = 2 * 3.14159 * 40 = 251.2
+                // We map 3.0x ROI to 100% of the visual meter
+                const maxRoi = 3.0;
+                const roiPercentage = Math.min(res.roi / maxRoi, 1);
+                const dashoffset = 251.2 - (roiPercentage * 251.2);
+                
+                const circle = document.getElementById('roiCircle');
+                circle.style.strokeDashoffset = dashoffset;
+                
+                const roiValEl = document.getElementById('roiVal');
+                roiValEl.textContent = res.roi.toFixed(2) + 'x';
+                
+                // Color mapping for circular gauge
+                if (res.roi >= 1.5) {
+                    circle.style.stroke = 'var(--text-success)';
+                    roiValEl.style.color = 'var(--text-success)';
+                } else if (res.roi < 1.0) {
+                    circle.style.stroke = 'var(--text-danger)';
+                    roiValEl.style.color = 'var(--text-danger)';
+                } else {
+                    circle.style.stroke = 'var(--accent-primary)';
+                    roiValEl.style.color = 'var(--accent-primary)';
+                }
+
+                // 4. Net Profit card details
+                const profit = res.predicted_revenue - movieData.budget;
+                const profitValEl = document.getElementById('profitVal');
+                profitValEl.textContent = fmt(profit);
+
+                const trendArrow = document.getElementById('trendArrow');
+                const trendLabel = document.getElementById('trendLabel');
+                const profitTrend = document.getElementById('profitTrend');
+                
+                if (profit > 0) {
+                    profitValEl.className = 'net-profit-display positive';
+                    profitTrend.className = 'net-profit-trend positive';
+                    trendArrow.textContent = '↑';
+                    trendLabel.textContent = 'Profitable';
+                } else {
+                    profitValEl.className = 'net-profit-display negative';
+                    profitTrend.className = 'net-profit-trend negative';
+                    trendArrow.textContent = '↓';
+                    trendLabel.textContent = 'Deficit';
+                }
+
+                // 5. Confidence Range
+                document.getElementById('confidenceVal').textContent = fmt(res.confidence_low) + ' – ' + fmt(res.confidence_high);
+
+                // 6. Top Influencing Factors
+                const b = Math.min(movieData.budget / 2e8, 1);
+                const pop = Math.min(movieData.popularity / 500, 1);
+                const gen = Math.min(selected.size / 5, 1);
+                const cast = Math.min(movieData.cast_count / 100, 1);
+                const tot = b + pop + gen + cast;
+
+                function setBar(id, pId, v) {
+                    const pct = Math.round(v / (tot || 1) * 100);
+                    document.getElementById(id).style.width = pct + '%';
+                    document.getElementById(pId).textContent = pct + '%';
+                }
+                setBar('fBudget', 'fBudgetPct', b);
+                setBar('fPop', 'fPopPct', pop);
+                setBar('fGenre', 'fGenrePct', gen);
+                setBar('fCast', 'fCastPct', cast);
+
+                // 7. Recommendations list
+                const recs = recMap[res.category] || [];
+                document.getElementById('recsArea').innerHTML = recs.map(r =>
+                    `<div class="rec-item"><span class="rec-arrow">›</span><span>${r}</span></div>`
+                ).join('');
+
+                // Display final dashboard
+                document.getElementById('resultsArea').classList.remove('hidden');
+
+            } catch (e) {
+                alert('Error: ' + e.message);
+                document.getElementById('emptyState').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingArea').classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup sync bindings
+            syncSliderNum('budgetSlider', 'budget', 'budgetVal');
+            syncSliderNum('popularitySlider', 'popularity', 'popularityVal');
+            syncSliderNum('runtimeSlider', 'runtime', 'runtimeVal');
+
+            renderPills();
+
+            // Set default release date to today
+            document.getElementById('releaseDate').value = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+
+</html>
